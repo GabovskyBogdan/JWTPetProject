@@ -1,6 +1,7 @@
 package com.insideinterview.userservice.service;
 
 import com.insideinterview.userservice.domain.AppUser;
+import com.insideinterview.userservice.domain.Message;
 import com.insideinterview.userservice.domain.Role;
 import com.insideinterview.userservice.repo.AppUserRepo;
 import com.insideinterview.userservice.repo.RoleRepo;
@@ -38,9 +39,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             log.info("User found in DB: {}", username);
         }
         Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
-        user.getRoles().forEach(role -> {
-            authorities.add(new SimpleGrantedAuthority(role.getName()));
-        });
+        user.getRoles().forEach(role -> authorities.add(new SimpleGrantedAuthority(role.getName())));
         return new User(user.getUsername(), user.getPassword(), authorities);
     }
 

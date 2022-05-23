@@ -3,7 +3,9 @@ package com.insideinterview.userservice.api;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.insideinterview.userservice.domain.AppUser;
+import com.insideinterview.userservice.domain.Message;
 import com.insideinterview.userservice.domain.Role;
+import com.insideinterview.userservice.service.MessageService;
 import com.insideinterview.userservice.service.UserService;
 import com.insideinterview.userservice.utility.TokenDecoder;
 import com.insideinterview.userservice.utility.TokenGenerator;
@@ -18,6 +20,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.Writer;
 import java.net.URI;
 import java.util.*;
 
@@ -32,6 +35,7 @@ import static org.springframework.util.MimeTypeUtils.APPLICATION_JSON_VALUE;
 public class UserController {
 
     private final UserService userService;
+    private final MessageService messageService;
 
     @GetMapping("/users")
     public ResponseEntity<List<AppUser>> getUsers() {
@@ -78,8 +82,35 @@ public class UserController {
                 new ObjectMapper().writeValue(response.getOutputStream(), error);
             }
         } else {
-            throw new  RuntimeException("Refresh token is missing");
+            throw new RuntimeException("Refresh token is missing");
         }
+    }
+
+    @GetMapping("/messages")
+    public ResponseEntity<List<Message>> getMessages() {
+        return ResponseEntity.ok().body(messageService.getMessages());
+    }
+
+    @PostMapping("/messages/save")
+    public ResponseEntity<Message> saveMessage(@RequestBody Message message) {
+        String users = Arrays.toString(userService.getUsers().toArray());
+        if (!users.contains(message.getUsername())) {
+            return ResponseEntity.badRequest().build();
+        }
+        URI uri = URI.create(ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/messages/save").toUriString());
+        return ResponseEntity.created(uri).body(messageService.saveMessage(message));
+    }
+
+    @GetMapping("/messages/save")
+    public ResponseEntity<List<Message>> saveMessageWithHistory(@RequestBody Message message) {
+        if (message.getMessage().contains("history ")) {
+            int messagesToReturn = Integer.parseInt(message.getMessage().substring("history ".length()));
+            List<Message> messages = messageService.getMessages();
+            Collections.reverse(messages);
+            List<Message> result = messages.subList(0, messagesToReturn);
+            return ResponseEntity.ok().body(result);
+        }
+        return ResponseEntity.badRequest().build();
     }
 }
 
